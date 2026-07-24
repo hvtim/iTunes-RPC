@@ -15,17 +15,28 @@ public sealed class AlbumArtLookup : IDisposable
         string key = $"{artist}|{track}|{album}";
         if (_cache.TryGetValue(key, out var cached)) return cached;
 
-        string? url = await LookupAsync(artist, track);
+        // Prefer an album-title search when we have one: it matches iTunes' own
+        // tagging (the actual album this track is filed under), avoids picking up
+        // a different single/compilation's cover art for songs that were also
+        // released as a single, and sidesteps track titles with unusual formatting
+        // (stylized/leetspeak, odd punctuation) that can miss a song-title search
+        // entirely. Every track on an album shares the same cover art anyway.
+        string? url = !string.IsNullOrWhiteSpace(album)
+            ? await LookupAsync($"{artist} {album}", "album")
+            : null;
+
+        url ??= await LookupAsync($"{artist} {track}", "song");
+
         _cache[key] = url;
         return url;
     }
 
-    private async Task<string?> LookupAsync(string artist, string track)
+    private async Task<string?> LookupAsync(string term, string entity)
     {
         try
         {
-            string term = Uri.EscapeDataString($"{artist} {track}".Trim());
-            string requestUrl = $"https://itunes.apple.com/search?term={term}&entity=song&limit=1";
+            string encodedTerm = Uri.EscapeDataString(term.Trim());
+            string requestUrl = $"https://itunes.apple.com/search?term={encodedTerm}&entity={entity}&limit=1";
 
             using var response = await _http.GetAsync(requestUrl);
             if (!response.IsSuccessStatusCode) return null;
