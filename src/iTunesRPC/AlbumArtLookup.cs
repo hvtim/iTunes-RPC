@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace iTunesSync;
+namespace iTunesRPC;
 
 // Looks up official cover art via Apple's public iTunes Search API (no auth needed)
 // so we have a real internet-reachable image URL per track - Discord can't render

@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Linq;
 
-namespace iTunesSync;
+namespace iTunesRPC;
 
 public enum PlaybackState
 {

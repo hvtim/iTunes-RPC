@@ -2,7 +2,7 @@ using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
 
-namespace iTunesSync;
+namespace iTunesRPC;
 
 // Minimal client for Discord's local Rich Presence IPC protocol (named pipe,
 // documented by the archived discord-rpc project). Implemented by hand instead

@@ -5,8 +5,8 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>iTunesSync</AssemblyName>
-    <RootNamespace>iTunesSync</RootNamespace>
+    <AssemblyName>iTunesRPC</AssemblyName>
+    <RootNamespace>iTunesRPC</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 

@@ -1,4 +1,4 @@
-namespace iTunesSync;
+namespace iTunesRPC;
 
 // Writes to both the console (useful when run from a terminal) and a log file next
 // to the exe (the only way to see anything once the app is running windowless via
@@ -7,7 +7,7 @@ namespace iTunesSync;
 public static class Log
 {
     private const long MaxSizeBytes = 2 * 1024 * 1024;
-    private static readonly string FilePath = Path.Combine(AppContext.BaseDirectory, "itunes-sync.log");
+    private static readonly string FilePath = Path.Combine(AppContext.BaseDirectory, "itunes-rpc.log");
 
     public static void Write(string message)
     {

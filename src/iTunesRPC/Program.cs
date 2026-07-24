@@ -1,5 +1,5 @@
 using System.Text.Json;
-using iTunesSync;
+using iTunesRPC;
 
 var configPath = Path.Combine(AppContext.BaseDirectory, "config.json");
 var config = LoadConfig(configPath);
@@ -23,7 +23,7 @@ DateTimeOffset lastSentAt = DateTimeOffset.MinValue;
 // (unchanged) activity periodically keeps it alive without needing new content.
 var refreshInterval = TimeSpan.FromSeconds(60);
 
-Log.Write("iTunes-Sync running. Press Ctrl+C to exit.");
+Log.Write("iTunes-RPC running. Press Ctrl+C to exit.");
 
 while (true)
 {

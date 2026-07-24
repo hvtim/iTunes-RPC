@@ -1,4 +1,4 @@
-# iTunes-Sync
+# iTunes-RPC
 
 Shows what's playing in iTunes as a Discord activity: "Listening to
 `<artist>`", with live album art, track number, and a progress bar.
@@ -11,11 +11,11 @@ Shows what's playing in iTunes as a Discord activity: "Listening to
 1. Create a Discord application at
    [discord.com/developers/applications](https://discord.com/developers/applications)
    and copy the Application ID.
-2. Download `iTunes-Sync.zip` from the
+2. Download `iTunes-RPC.zip` from the
    [latest release](../../releases/latest) and extract it.
 3. Run `install.bat` and paste the Application ID when asked.
 
-Installs to `%LOCALAPPDATA%\iTunes-Sync` and starts at login.
+Installs to `%LOCALAPPDATA%\iTunes-RPC` and starts at login.
 
 Re-running `install.bat` from a newer release upgrades in place and keeps
 your existing Application ID.
@@ -33,16 +33,16 @@ idle otherwise. Runs windowed, with no console.
 ## Build from source
 
 ```
-dotnet run --project src\iTunesSync
+dotnet run --project src\iTunesRPC
 ```
 
 Standalone exe:
 
 ```
-dotnet publish src\iTunesSync -c Release -r win-x64 --self-contained false
+dotnet publish src\iTunesRPC -c Release -r win-x64 --self-contained false
 ```
 
-Output: `src\iTunesSync\bin\Release\net8.0-windows\win-x64\publish\`.
+Output: `src\iTunesRPC\bin\Release\net8.0-windows\win-x64\publish\`.
 
 Requires iTunes and Discord both running, checked at runtime.
 

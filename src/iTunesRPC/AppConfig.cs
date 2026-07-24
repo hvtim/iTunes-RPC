@@ -1,4 +1,4 @@
-namespace iTunesSync;
+namespace iTunesRPC;
 
 public class AppConfig
 {
