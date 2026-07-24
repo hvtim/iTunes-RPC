@@ -48,27 +48,16 @@ Requires iTunes and Discord both running, checked at runtime.
 
 ## How it works
 
-- Polls iTunes over COM (`iTunes.Application`) every 2 seconds for the
-  current track and position.
-- Talks to Discord's local Rich Presence IPC (named pipe) directly, setting
-  `activity.type = 2` for the "Listening to" wording and a raw image URL
-  for `large_image`.
-- Looks up cover art via Apple's iTunes Search API, searching artist+album
-  first and falling back to artist+track. Passes the image URL directly as
-  `large_image`.
-- Sets the activity's `name` field to the artist, which drives the compact
-  tag next to your username in Discord.
+- Polls iTunes every 2 seconds for the current track and position.
+- Sends it to Discord as a "Listening to" Rich Presence activity.
+- Looks up cover art via Apple's iTunes Search API (album, then track).
+- Shows the artist in Discord's compact status tag next to your username.
 
 ## Known limitations
 
-- `type: 2` for "Listening to" isn't officially documented for third-party
-  apps. Discord could restrict it in a future update, falling back to
-  "Playing iTunes-Sync" with the same info otherwise intact.
-- Album art depends on Apple's catalog matching the artist/album or
-  artist/track. Tracks not distributed on Apple Music (unreleased/leaked
-  tracks with fan-applied tags) won't match under any strategy and fall
-  back to a static logo (`LargeImageKey` in `config.json`).
-- Known bug: album art can still disappear intermittently on long sessions.
-  A 60-second keepalive resend fixed the common case (art expiring after
-  ~2 minutes) but not all cases. Root cause not confirmed. See
+- The "Listening to" wording isn't officially supported for third-party
+  apps and could change in a future Discord update.
+- Album art requires a match on Apple's catalog. Unreleased or mistagged
+  tracks fall back to a static logo.
+- Album art can still disappear intermittently on long sessions. See
   [issue #1](../../issues/1).
