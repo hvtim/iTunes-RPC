@@ -60,11 +60,14 @@ build time.
   of a wrapper library, since this needs `activity.type = 2` ("Listening
   to...") and a raw external image URL for `large_image` - neither exposed
   by most .NET wrapper libraries.
-- Looks up cover art per track via Apple's public iTunes Search API (no
-  auth needed) and passes the image URL straight through as `large_image`.
-  Discord's RPC accepts a raw HTTPS URL there directly - undocumented, but
-  confirmed working, and simpler than the official external-assets/OAuth
-  flow other guides use.
+- Looks up cover art via Apple's public iTunes Search API (no auth needed),
+  preferring an artist+album search over artist+track - matches iTunes' own
+  tagging and avoids picking up a different single's cover for tracks also
+  released standalone - falling back to a track-title search if that finds
+  nothing. Passes the image URL straight through as `large_image`; Discord's
+  RPC accepts a raw HTTPS URL there directly - undocumented, but confirmed
+  working, and simpler than the official external-assets/OAuth flow other
+  guides use.
 - Sets the activity's `name` field to the artist, which drives the small
   tag next to your username in Discord's member/friend lists. It doesn't
   get a "Listening to" prefix there (only the full profile card adds that,
@@ -77,10 +80,12 @@ build time.
   third-party apps - Discord could restrict it in a future update, which
   would fall back to "Playing iTunes-Sync" with the same info otherwise
   intact.
-- Album art depends on Apple's iTunes Search API matching the artist/track
-  name - obscure or mistagged tracks fall back to a static logo
-  (`LargeImageKey` in `config.json`, if you've uploaded one under your
-  Discord app's Rich Presence → Art Assets).
+- Album art depends on Apple's iTunes Search API matching the artist/album
+  or artist/track - tracks not actually distributed on Apple Music (e.g.
+  unreleased/leaked tracks with fan-applied tags) won't match under any
+  search strategy and fall back to a static logo (`LargeImageKey` in
+  `config.json`, if you've uploaded one under your Discord app's Rich
+  Presence → Art Assets).
 - **Known bug:** album art can still disappear intermittently on longer
   listening sessions. The app re-sends the activity every 60 seconds to
   keep externally-hosted images alive (they otherwise expire client-side
