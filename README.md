@@ -4,6 +4,11 @@ Shows what's playing in iTunes as a Discord activity ("Listening to
 `<artist>`"), with live per-track album art, track number (e.g. "Track 2 /
 11"), and a real progress bar - confirmed working end to end.
 
+> Built with the help of [Claude Code](https://claude.com/claude-code)
+> (Anthropic's AI coding agent) - code, install/uninstall scripts, and this
+> README were AI-assisted, with live testing against a real Discord/iTunes
+> session along the way.
+
 ## How it works
 
 - Polls iTunes directly over COM (`iTunes.Application`) every 2 seconds for
