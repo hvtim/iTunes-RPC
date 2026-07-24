@@ -9,21 +9,21 @@ Shows what's playing in iTunes as a Discord activity: "Listening to
 ## Install
 
 1. Create a Discord application at
-   [discord.com/developers/applications](https://discord.com/developers/applications).
-   Copy the Application ID from General Information. This name shows up
-   after "Listening to".
+   [discord.com/developers/applications](https://discord.com/developers/applications)
+   and copy the Application ID.
 2. Download `iTunes-Sync.zip` from the
    [latest release](../../releases/latest) and extract it.
-3. Run `install.bat` and paste the Application ID when asked. This installs
-   to `%LOCALAPPDATA%\iTunes-Sync`, sets it to start at login, and runs it.
+3. Run `install.bat` and paste the Application ID when asked.
 
-Only the Application ID is required.
-
-To uninstall, run `uninstall.bat` from the same folder. It stops the app,
-removes the autostart shortcut, and deletes the installed files.
+Installs to `%LOCALAPPDATA%\iTunes-Sync` and starts at login.
 
 Re-running `install.bat` from a newer release upgrades in place and keeps
 your existing Application ID.
+
+## Uninstall
+
+Run `uninstall.bat` from the same folder. Stops the app, removes the
+autostart shortcut, and deletes the installed files.
 
 ## Autorun behavior
 
