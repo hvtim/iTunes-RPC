@@ -130,3 +130,13 @@ from the Startup folder if you set it up by hand.
 - The compact member-list tag shows the artist name only, no "Listening to"
   prefix (see note above) - a deliberate tradeoff to avoid a doubled-up
   header on the full profile card.
+
+## Known bugs
+
+- **Album art sometimes disappears after playing for a while**, even with
+  the 60-second keepalive refresh (see note above) in place. Root cause not
+  yet identified - the keepalive fixed the original ~2-minute case, but it
+  can still happen intermittently on longer sessions. Needs more
+  investigation (possibly a longer-lived cache/rate-limit on Discord's side
+  that the current interval doesn't fully account for). If you hit this and
+  find a pattern, contributions/issues welcome.
