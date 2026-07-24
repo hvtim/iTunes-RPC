@@ -6,8 +6,8 @@ var config = LoadConfig(configPath);
 
 if (string.IsNullOrWhiteSpace(config.ClientId) || config.ClientId == "YOUR_DISCORD_CLIENT_ID_HERE")
 {
-    Console.WriteLine($"Set your Discord application Client ID in {configPath} before running.");
-    Console.WriteLine("See README.md for how to create a Discord application and get a Client ID.");
+    Log.Write($"Set your Discord application Client ID in {configPath} before running.");
+    Log.Write("See README.md for how to create a Discord application and get a Client ID.");
     return;
 }
 
@@ -23,7 +23,7 @@ DateTimeOffset lastSentAt = DateTimeOffset.MinValue;
 // (unchanged) activity periodically keeps it alive without needing new content.
 var refreshInterval = TimeSpan.FromSeconds(60);
 
-Console.WriteLine("iTunes-Sync running. Press Ctrl+C to exit.");
+Log.Write("iTunes-Sync running. Press Ctrl+C to exit.");
 
 while (true)
 {
@@ -33,9 +33,16 @@ while (true)
     {
         if (lastSignature != null)
         {
-            discord.ClearActivity();
-            lastSignature = null;
-            Console.WriteLine("Cleared Discord activity (nothing playing).");
+            bool cleared = discord.ClearActivity();
+            if (cleared)
+            {
+                lastSignature = null;
+                Log.Write("Cleared Discord activity (nothing playing).");
+            }
+            else
+            {
+                Log.Write("[warn] Failed to clear Discord activity - will retry.");
+            }
         }
     }
     else
@@ -60,7 +67,7 @@ while (true)
             string? artworkUrl = await artLookup.GetArtworkUrlAsync(track.Artist, track.Name, track.Album);
             string largeImageKey = artworkUrl ?? config.LargeImageKey;
 
-            discord.SetActivity(
+            bool sent = discord.SetActivity(
                 name: track.Artist,
                 details: track.Name,
                 state: state,
@@ -69,9 +76,23 @@ while (true)
                 largeImageKey: largeImageKey,
                 largeImageText: string.IsNullOrEmpty(track.Album) ? "iTunes" : track.Album);
 
-            lastSignature = signature;
-            lastSentAt = now;
-            Console.WriteLine($"Updated: {track.Name} - {state}{(artworkUrl != null ? " [cover art]" : "")}{(refreshDue && !contentChanged ? " (keepalive)" : "")}");
+            string kind = refreshDue && !contentChanged ? " (keepalive)" : "";
+            string art = artworkUrl != null ? " [cover art]" : "";
+
+            if (sent)
+            {
+                // Only mark this update as delivered on actual success - if the IPC
+                // write silently failed (transient pipe hiccup), we want the next poll
+                // (2s later) to retry immediately rather than waiting a full
+                // refreshInterval, which is what let Discord's image validation lapse.
+                lastSignature = signature;
+                lastSentAt = now;
+                Log.Write($"Updated: {track.Name} - {state}{art}{kind} [{largeImageKey}]");
+            }
+            else
+            {
+                Log.Write($"[warn] Failed to send activity update for {track.Name} - will retry next poll.");
+            }
         }
     }
 

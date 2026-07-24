@@ -51,9 +51,9 @@ public sealed class DiscordIpcClient : IDisposable
         return false;
     }
 
-    public void SetActivity(string name, string details, string state, DateTimeOffset start, DateTimeOffset? end, string largeImageKey, string largeImageText)
+    public bool SetActivity(string name, string details, string state, DateTimeOffset start, DateTimeOffset? end, string largeImageKey, string largeImageText)
     {
-        if (!IsConnected && !Connect()) return;
+        if (!IsConnected && !Connect()) return false;
 
         object timestamps = end.HasValue
             ? new { start = start.ToUnixTimeSeconds(), end = end.Value.ToUnixTimeSeconds() }
@@ -78,12 +78,12 @@ public sealed class DiscordIpcClient : IDisposable
             nonce = Guid.NewGuid().ToString()
         };
 
-        TrySend(payload);
+        return TrySend(payload);
     }
 
-    public void ClearActivity()
+    public bool ClearActivity()
     {
-        if (!IsConnected) return;
+        if (!IsConnected) return false;
 
         var payload = new
         {
@@ -92,21 +92,23 @@ public sealed class DiscordIpcClient : IDisposable
             nonce = Guid.NewGuid().ToString()
         };
 
-        TrySend(payload);
+        return TrySend(payload);
     }
 
-    private void TrySend(object payload)
+    private bool TrySend(object payload)
     {
         try
         {
             WriteFrame(OpFrame, JsonSerializer.Serialize(payload));
             ReadFrame();
+            return true;
         }
         catch
         {
             // Discord likely closed/restarted - drop the pipe so the next call reconnects.
             _pipe?.Dispose();
             _pipe = null;
+            return false;
         }
     }
 
