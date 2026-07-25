@@ -38,6 +38,7 @@ public sealed class SettingsForm : Form
     private readonly CheckBox _autoLaunchBox = new();
     private readonly Button _saveButton = new();
     private readonly System.Windows.Forms.Timer _savedFeedbackTimer = new() { Interval = 1300 };
+    private readonly ToolTip _clientIdTooltip = new();
 
     private readonly string _configPath;
     private readonly string _currentMediaSource;
@@ -64,6 +65,10 @@ public sealed class SettingsForm : Form
         _clientIdBox.Left = S(16); _clientIdBox.Top = S(36); _clientIdBox.Width = S(196); _clientIdBox.Height = S(24);
         _clientIdBox.PasswordChar = '*';
         _clientIdBox.Text = config.ClientId == "YOUR_DISCORD_CLIENT_ID_HERE" ? "" : config.ClientId;
+
+        const string clientIdTip = "This is a public app identifier, not a secret - masked here only as a convenience, e.g. when screen sharing.";
+        _clientIdTooltip.SetToolTip(clientIdLabel, clientIdTip);
+        _clientIdTooltip.SetToolTip(_clientIdBox, clientIdTip);
 
         var showButton = new Button { Text = "Show", Left = S(218), Top = S(35), Width = S(78), Height = S(26) };
         showButton.MouseDown += (_, _) => _clientIdBox.PasswordChar = '\0';
