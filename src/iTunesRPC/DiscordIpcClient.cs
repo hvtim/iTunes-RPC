@@ -13,12 +13,6 @@ public sealed class DiscordIpcClient : IDisposable
     private const int OpHandshake = 0;
     private const int OpFrame = 1;
 
-    // Real Discord RPC payloads (activity JSON) are well under this - a length
-    // this large can only be a corrupt frame or a malicious pipe pretending to
-    // be Discord (nothing authenticates that discord-ipc-N is actually Discord's
-    // own process), so reject it before allocating rather than trusting it.
-    private const int MaxFrameSize = 1024 * 1024;
-
     private readonly string _clientId;
     private readonly int _pid = Environment.ProcessId;
     private NamedPipeClientStream? _pipe;
@@ -134,10 +128,6 @@ public sealed class DiscordIpcClient : IDisposable
     {
         var header = ReadExact(8);
         int length = BitConverter.ToInt32(header, 4);
-        if (length < 0 || length > MaxFrameSize)
-        {
-            throw new IOException($"Discord IPC frame length {length} out of bounds");
-        }
         var body = ReadExact(length);
         return Encoding.UTF8.GetString(body);
     }

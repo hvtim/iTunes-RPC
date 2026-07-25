@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 # Bump this alongside each release tag - shown in Windows' "Installed apps" list.
-$appVersion = "2.0.1"
+$appVersion = "2.0.0"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sourceDir = Join-Path $scriptDir "app"

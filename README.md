@@ -25,15 +25,6 @@ Settings automatically so you can paste the Application ID.
 Re-running `install.bat` from a newer release upgrades in place and keeps
 your settings.
 
-### Verify the download
-
-Each release includes a SHA256 checksum in its notes. To check the zip
-matches it:
-
-```
-CertUtil -hashfile iTunes-RPC.zip SHA256
-```
-
 ## Uninstall
 
 Run `uninstall.bat` from the same folder, or uninstall it like any other
