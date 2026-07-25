@@ -12,10 +12,22 @@ if (Test-Path $shortcutPath) {
     Write-Host "Removed autostart shortcut."
 }
 
+$uninstallKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\iTunes-RPC"
+if (Test-Path $uninstallKey) {
+    Remove-Item $uninstallKey -Recurse -Force
+    Write-Host "Removed entry from Windows' Installed apps list."
+}
+
 $installDir = Join-Path $env:LOCALAPPDATA "iTunes-RPC"
 if (Test-Path $installDir) {
-    Remove-Item $installDir -Recurse -Force
-    Write-Host "Removed installed files from $installDir."
+    # This script is also shipped inside $installDir itself (so the registered
+    # UninstallString keeps working without the original release folder), which
+    # means it may be running from the very directory it needs to delete.
+    # Deleting it directly here can fail with a file-in-use error, so hand the
+    # delete off to a short-lived detached process that waits for this one to
+    # fully exit first.
+    Start-Process cmd.exe -ArgumentList "/c timeout /t 2 /nobreak >nul & rmdir /s /q `"$installDir`"" -WindowStyle Hidden
+    Write-Host "Removing installed files from $installDir..."
 }
 
 Write-Host ""

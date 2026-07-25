@@ -12,4 +12,8 @@ public class AppConfig
     // "Off" (always use LargeImageKey, no lookups).
     public string ArtMode { get; set; } = "Auto";
     public string CustomArtUrl { get; set; } = "";
+
+    // "iTunes" (COM automation), or an SMTC app user model id (e.g. "vlc.exe")
+    // for any other app reporting now-playing info to Windows.
+    public string MediaSource { get; set; } = "iTunes";
 }

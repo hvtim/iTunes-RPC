@@ -10,11 +10,13 @@ public sealed class PresenceEngine : IDisposable
     private static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(60);
 
     private readonly ITunesMonitor _iTunes = new();
+    private readonly SmtcMonitor _smtc = new();
     private readonly AlbumArtLookup _artLookup = new();
     private DiscordIpcClient? _discord;
     private CancellationTokenSource? _cts;
     private Task? _loopTask;
     private volatile bool _reconnectRequested;
+    private volatile bool _forceResend;
 
     private string? _lastSignature;
     private DateTimeOffset _lastSentAt = DateTimeOffset.MinValue;
@@ -35,6 +37,12 @@ public sealed class PresenceEngine : IDisposable
             _reconnectRequested = true;
         }
         Config = config;
+
+        // Cosmetic-only changes (track number, art mode, etc.) don't change the
+        // track/artist/state signature the loop checks, so without this they'd
+        // silently wait for the next real track change or the 60s keepalive
+        // before actually reaching Discord.
+        _forceResend = true;
     }
 
     public void Start()
@@ -85,7 +93,9 @@ public sealed class PresenceEngine : IDisposable
                 continue;
             }
 
-            var track = _iTunes.GetCurrentTrack();
+            var track = string.IsNullOrWhiteSpace(Config.MediaSource) || Config.MediaSource == "iTunes"
+                ? _iTunes.GetCurrentTrack()
+                : await _smtc.GetCurrentTrackAsync(Config.MediaSource);
 
             if (track is null || track.State == PlaybackState.Stopped || string.IsNullOrEmpty(track.Name))
             {
@@ -121,9 +131,12 @@ public sealed class PresenceEngine : IDisposable
 
                 bool contentChanged = signature != _lastSignature;
                 bool refreshDue = now - _lastSentAt >= RefreshInterval;
+                bool forceResend = _forceResend;
 
-                if (contentChanged || refreshDue)
+                if (contentChanged || refreshDue || forceResend)
                 {
+                    _forceResend = false;
+
                     var start = now.AddSeconds(-track.ElapsedSeconds);
                     DateTimeOffset? end = track.State == PlaybackState.Playing
                         ? start.AddSeconds(track.DurationSeconds)
@@ -157,7 +170,7 @@ public sealed class PresenceEngine : IDisposable
                         start: start,
                         end: end,
                         largeImageKey: largeImageKey,
-                        largeImageText: string.IsNullOrEmpty(track.Album) ? "iTunes" : track.Album);
+                        largeImageText: string.IsNullOrEmpty(track.Album) ? "Now Playing" : track.Album);
 
                     string kind = refreshDue && !contentChanged ? " (keepalive)" : "";
                     string art = artTag;

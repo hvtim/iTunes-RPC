@@ -65,6 +65,11 @@ public static class Theme
                     numeric.BorderStyle = BorderStyle.FixedSingle;
                     ApplyNativeDarkTheme(numeric);
                     break;
+                case ComboBox comboBox:
+                    comboBox.BackColor = Surface;
+                    comboBox.FlatStyle = FlatStyle.Flat;
+                    ApplyNativeDarkTheme(comboBox);
+                    break;
                 case Panel panel:
                     panel.BackColor = Background;
                     if (panel.BorderStyle != BorderStyle.None) panel.BackColor = Surface;
