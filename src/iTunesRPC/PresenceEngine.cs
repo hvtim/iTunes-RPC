@@ -138,7 +138,10 @@ public sealed class PresenceEngine : IDisposable
                     _forceResend = false;
 
                     var start = now.AddSeconds(-track.ElapsedSeconds);
-                    DateTimeOffset? end = track.State == PlaybackState.Playing
+                    // A zero/unknown duration (some SMTC sources never report one) would
+                    // make end == start, rendering the activity as already finished the
+                    // instant it's sent - only set an end time when duration is real.
+                    DateTimeOffset? end = track.State == PlaybackState.Playing && track.DurationSeconds > 0
                         ? start.AddSeconds(track.DurationSeconds)
                         : null;
 

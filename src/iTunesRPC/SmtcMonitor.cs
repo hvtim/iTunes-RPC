@@ -69,10 +69,21 @@ public sealed class SmtcMonitor
             // SMTC only reports position at discrete update points, not a continuous
             // stream - while playing, extrapolate from how long it's been since that
             // last update rather than showing a position that's stuck between polls.
-            double elapsed = state == PlaybackState.Playing
-                ? position + (DateTimeOffset.Now - timeline.LastUpdatedTime).TotalSeconds
-                : position;
-            elapsed = Math.Max(0, duration > 0 ? Math.Min(elapsed, duration) : elapsed);
+            // Only do this when duration is known, so it can be clamped: some sources
+            // (weak SMTC implementations, some browsers) never populate EndTime/StartTime,
+            // and without a duration to clamp against, extrapolating forever means a
+            // source that goes quiet while still reporting "Playing" drifts further from
+            // reality the longer it goes unrefreshed.
+            double elapsed;
+            if (duration > 0 && state == PlaybackState.Playing)
+            {
+                elapsed = position + (DateTimeOffset.Now - timeline.LastUpdatedTime).TotalSeconds;
+                elapsed = Math.Max(0, Math.Min(elapsed, duration));
+            }
+            else
+            {
+                elapsed = Math.Max(0, position);
+            }
 
             return new TrackInfo(
                 props.Title ?? "",
