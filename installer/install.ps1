@@ -1,6 +1,5 @@
 param(
-    [switch]$NoAutoStart,
-    [switch]$Desktop
+    [switch]$NoAutoStart
 )
 
 $ErrorActionPreference = "Stop"
@@ -28,31 +27,17 @@ Copy-Item -Path (Join-Path $sourceDir "*") -Destination $installDir -Recurse -Fo
 Copy-Item -Path (Join-Path $scriptDir "uninstall.ps1") -Destination $installDir -Force
 Copy-Item -Path (Join-Path $scriptDir "uninstall.bat") -Destination $installDir -Force
 
+$startupDir = [Environment]::GetFolderPath("Startup")
+$shortcutPath = Join-Path $startupDir "iTunes-RPC.lnk"
 $exePath = Join-Path $installDir "iTunesRPC.exe"
-$shell = New-Object -ComObject WScript.Shell
 
-function New-AppShortcut($path) {
-    $shortcut = $shell.CreateShortcut($path)
+if (-not $NoAutoStart) {
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($shortcutPath)
     $shortcut.TargetPath = $exePath
     $shortcut.WorkingDirectory = $installDir
     $shortcut.Description = "iTunes now-playing sync for Discord Rich Presence"
     $shortcut.Save()
-}
-
-# Start Menu entry is always created - without it, there was no way to relaunch
-# the app after quitting it except navigating to the install directory by hand.
-$startMenuDir = [Environment]::GetFolderPath("StartMenu")
-$startMenuDir = Join-Path $startMenuDir "Programs"
-New-AppShortcut (Join-Path $startMenuDir "iTunes-RPC.lnk")
-
-if (-not $NoAutoStart) {
-    $startupDir = [Environment]::GetFolderPath("Startup")
-    New-AppShortcut (Join-Path $startupDir "iTunes-RPC.lnk")
-}
-
-if ($Desktop) {
-    $desktopDir = [Environment]::GetFolderPath("Desktop")
-    New-AppShortcut (Join-Path $desktopDir "iTunes-RPC.lnk")
 }
 
 # Register in Windows' "Installed apps" (Settings > Apps), per-user, no admin
@@ -75,7 +60,6 @@ if ($NoAutoStart) {
 } else {
     Write-Host "Installed. iTunes-RPC will now start automatically at login." -ForegroundColor Green
 }
-Write-Host "Added a Start Menu shortcut$(if ($Desktop) { ' and a Desktop shortcut' })."
 Write-Host "It also now shows up in Windows Settings > Apps > Installed apps."
 Write-Host ""
 

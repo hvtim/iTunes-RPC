@@ -12,19 +12,6 @@ if (Test-Path $shortcutPath) {
     Write-Host "Removed autostart shortcut."
 }
 
-$startMenuDir = Join-Path ([Environment]::GetFolderPath("StartMenu")) "Programs"
-$startMenuShortcut = Join-Path $startMenuDir "iTunes-RPC.lnk"
-if (Test-Path $startMenuShortcut) {
-    Remove-Item $startMenuShortcut -Force
-    Write-Host "Removed Start Menu shortcut."
-}
-
-$desktopShortcut = Join-Path ([Environment]::GetFolderPath("Desktop")) "iTunes-RPC.lnk"
-if (Test-Path $desktopShortcut) {
-    Remove-Item $desktopShortcut -Force
-    Write-Host "Removed Desktop shortcut."
-}
-
 $uninstallKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\iTunes-RPC"
 if (Test-Path $uninstallKey) {
     Remove-Item $uninstallKey -Recurse -Force

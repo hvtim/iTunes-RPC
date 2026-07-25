@@ -61,10 +61,16 @@ public sealed class SettingsForm : Form
         Padding = new Padding(S(12));
 
         var clientIdLabel = new Label { Text = "Discord Application ID", Left = S(16), Top = S(14), AutoSize = true };
-        _clientIdBox.Left = S(16); _clientIdBox.Top = S(36); _clientIdBox.Width = S(280); _clientIdBox.Height = S(24);
+        _clientIdBox.Left = S(16); _clientIdBox.Top = S(36); _clientIdBox.Width = S(196); _clientIdBox.Height = S(24);
+        _clientIdBox.PasswordChar = '*';
         _clientIdBox.Text = config.ClientId == "YOUR_DISCORD_CLIENT_ID_HERE" ? "" : config.ClientId;
 
-        var pasteButton = new Button { Text = "Paste", Left = S(304), Top = S(35), Width = S(80), Height = S(26) };
+        var showButton = new Button { Text = "Show", Left = S(218), Top = S(35), Width = S(78), Height = S(26) };
+        showButton.MouseDown += (_, _) => _clientIdBox.PasswordChar = '\0';
+        showButton.MouseUp += (_, _) => _clientIdBox.PasswordChar = '*';
+        showButton.MouseLeave += (_, _) => _clientIdBox.PasswordChar = '*';
+
+        var pasteButton = new Button { Text = "Paste", Left = S(302), Top = S(35), Width = S(78), Height = S(26) };
         pasteButton.Click += (_, _) =>
         {
             if (Clipboard.ContainsText())
@@ -157,7 +163,7 @@ public sealed class SettingsForm : Form
 
         Controls.AddRange(new Control[]
         {
-            clientIdLabel, _clientIdBox, pasteButton, mediaSourceLabel, _mediaSourceCombo, refreshButton,
+            clientIdLabel, _clientIdBox, showButton, pasteButton, mediaSourceLabel, _mediaSourceCombo, refreshButton,
             _broadcastBox, _trackNumberBox, artSectionLabel, artPanel,
             pollLabel, _pollIntervalBox, _autoLaunchBox, _saveButton, closeButton
         });
