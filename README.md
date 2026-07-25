@@ -1,7 +1,10 @@
+<img src="assets/icon.png" width="96" height="96" alt="iTunes-RPC icon">
+
 # iTunes-RPC
 
 Shows what's playing in iTunes as a Discord activity: "Listening to
-`<artist>`", with live album art, track number, and a progress bar.
+`<artist>`", with live album art, track number, and a progress bar. Runs as
+a tray icon with a Settings window, no config file editing required.
 
 > Built with the help of [Claude Code](https://claude.com/claude-code)
 > (Anthropic's AI coding agent).

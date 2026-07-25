@@ -8,6 +8,9 @@
     <AssemblyName>iTunesRPC</AssemblyName>
     <RootNamespace>iTunesRPC</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>..\..\assets\icon.ico</ApplicationIcon>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
 
 </Project>
