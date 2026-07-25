@@ -1,9 +1,14 @@
 @echo off
 choice /C YN /M "Start iTunes-RPC automatically when you log in"
-if errorlevel 2 (
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install.ps1" -NoAutoStart
-) else (
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install.ps1"
-)
+set AUTOSTART=%errorlevel%
+
+choice /C YN /M "Add a Desktop shortcut"
+set DESKTOP=%errorlevel%
+
+set ARGS=
+if "%AUTOSTART%"=="2" set ARGS=%ARGS% -NoAutoStart
+if "%DESKTOP%"=="1" set ARGS=%ARGS% -Desktop
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install.ps1" %ARGS%
 echo.
 pause
