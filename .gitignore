@@ -3,3 +3,10 @@ obj/
 *.user
 release/
 *.zip
+
+# CMake build output (native/) and the release-payload staging folder
+# install.ps1 expects an app/ binary dropped into before running -
+# populated at release-packaging time, not tracked in source control.
+native/build/
+native/build-*/
+installer/app/

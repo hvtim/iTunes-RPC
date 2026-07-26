@@ -6,7 +6,8 @@ param(
 $ErrorActionPreference = "Stop"
 
 # Bump this alongside each release tag - shown in Windows' "Installed apps" list.
-$appVersion = "2.0.0"
+$appVersion = "3.0.0"
+$exeName = "iTunesRPC.exe"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sourceDir = Join-Path $scriptDir "app"
@@ -20,6 +21,36 @@ if (!(Test-Path $sourceDir)) {
 
 Write-Host "Installing iTunes-RPC to $installDir ..."
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+
+# Stop any already-running instance before copying files over it - a native
+# exe holds an exclusive file lock while running (unlike .NET's more
+# lenient assembly loading), so Copy-Item below would fail on any upgrade
+# where the app is already running, which is the common case once autostart
+# is enabled.
+Get-Process ([System.IO.Path]::GetFileNameWithoutExtension($exeName)) -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Start-Sleep -Milliseconds 300
+
+# One-time migration cleanup: the old .NET build shipped these dependency
+# files alongside iTunesRPC.exe/.dll - the native build needs none of them,
+# but Copy-Item below only overwrites matching filenames, so they'd
+# otherwise be left behind as dead weight (Microsoft.Windows.SDK.NET.dll
+# alone is ~25MB). Safe to remove this list once most installs have
+# upgraded past the native rewrite.
+$staleDotNetFiles = @(
+    "iTunesRPC.dll",
+    "iTunesRPC.pdb",
+    "iTunesRPC.deps.json",
+    "iTunesRPC.runtimeconfig.json",
+    "WinRT.Runtime.dll",
+    "Microsoft.Windows.SDK.NET.dll"
+)
+foreach ($staleFile in $staleDotNetFiles) {
+    $staleFilePath = Join-Path $installDir $staleFile
+    if (Test-Path $staleFilePath) {
+        Remove-Item $staleFilePath -Force -ErrorAction SilentlyContinue
+    }
+}
+
 Copy-Item -Path (Join-Path $sourceDir "*") -Destination $installDir -Recurse -Force
 
 # Copy the uninstaller into the install directory too, so Windows' "Installed
@@ -28,7 +59,7 @@ Copy-Item -Path (Join-Path $sourceDir "*") -Destination $installDir -Recurse -Fo
 Copy-Item -Path (Join-Path $scriptDir "uninstall.ps1") -Destination $installDir -Force
 Copy-Item -Path (Join-Path $scriptDir "uninstall.bat") -Destination $installDir -Force
 
-$exePath = Join-Path $installDir "iTunesRPC.exe"
+$exePath = Join-Path $installDir $exeName
 $shell = New-Object -ComObject WScript.Shell
 
 function New-AppShortcut($path) {
@@ -71,7 +102,7 @@ Set-ItemProperty -Path $uninstallKey -Name "NoRepair" -Value 1 -Type DWord
 Set-ItemProperty -Path $uninstallKey -Name "EstimatedSize" -Value $installedSizeKb -Type DWord
 
 if ($NoAutoStart) {
-    Write-Host "Installed. Autostart at login was skipped - enable it anytime from Settings." -ForegroundColor Green
+    Write-Host "Installed. Autostart at login was skipped - enable it anytime from the tray menu." -ForegroundColor Green
 } else {
     Write-Host "Installed. iTunes-RPC will now start automatically at login." -ForegroundColor Green
 }
@@ -79,8 +110,8 @@ Write-Host "Added a Start Menu shortcut$(if ($Desktop) { ' and a Desktop shortcu
 Write-Host "It also now shows up in Windows Settings > Apps > Installed apps."
 Write-Host ""
 
-Get-Process iTunesRPC -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Get-Process ([System.IO.Path]::GetFileNameWithoutExtension($exeName)) -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Milliseconds 300
 Start-Process -FilePath $exePath -WorkingDirectory $installDir
 
-Write-Host "Started iTunes-RPC. A tray icon should now appear - open Settings from there to enter your Discord Application ID." -ForegroundColor Green
+Write-Host "Started iTunes-RPC. A tray icon should now appear - right-click it to enter your Discord Application ID." -ForegroundColor Green

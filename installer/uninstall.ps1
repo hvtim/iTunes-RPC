@@ -1,8 +1,10 @@
 $ErrorActionPreference = "SilentlyContinue"
 
+$exeName = "iTunesRPC.exe"
+
 Write-Host "Uninstalling iTunes-RPC..."
 
-Get-Process iTunesRPC -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process ([System.IO.Path]::GetFileNameWithoutExtension($exeName)) -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Milliseconds 300
 
 $startupDir = [Environment]::GetFolderPath("Startup")
