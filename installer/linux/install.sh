@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Bump this alongside each release tag.
-APP_VERSION="3.0.0"
+APP_VERSION="3.0.0-alpha.1"
 EXE_NAME="iTunesRPC"
 
 NO_AUTOSTART=0
