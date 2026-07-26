@@ -4,8 +4,8 @@
 #include "core/AppConfig.h"
 #include "core/ConfigPaths.h"
 
+#include <charconv>
 #include <chrono>
-#include <cstdlib>
 #include <iostream>
 #include <thread>
 
@@ -134,8 +134,11 @@ int HandlePollInterval(const std::vector<std::string>& args, Hooks& hooks) {
         return 0;
     }
     if (args[1] == "set" && args.size() >= 3) {
-        int ms = std::atoi(args[2].c_str());
-        if (ms <= 0) {
+        int ms = 0;
+        const std::string& arg = args[2];
+        auto result = std::from_chars(arg.data(), arg.data() + arg.size(), ms);
+        bool valid = result.ec == std::errc() && result.ptr == arg.data() + arg.size() && ms > 0;
+        if (!valid) {
             std::cout << "pollinterval must be a positive number of milliseconds.\n";
             return 1;
         }
