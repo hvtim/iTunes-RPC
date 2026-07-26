@@ -1,9 +1,11 @@
 #include "LaunchAgentAutoLaunch.h"
 
+#include "core/AppConfig.h"
+#include "core/ConfigPaths.h"
+
 #include <mach-o/dyld.h>
 
 #include <cstdlib>
-#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <vector>
@@ -12,20 +14,18 @@ namespace platform_macos {
 
 namespace {
 
-constexpr const char* kLabel = "com.hvtim.itunes-rpc";
-
-std::filesystem::path PlistPath() {
+std::filesystem::path PlistPath(const std::string& label) {
     const char* home = std::getenv("HOME");
     if (!home) {
         return {};
     }
-    return std::filesystem::path(home) / "Library" / "LaunchAgents" / (std::string(kLabel) + ".plist");
+    return std::filesystem::path(home) / "Library" / "LaunchAgents" / (label + ".plist");
 }
 
 // _NSGetExecutablePath over NSBundle - keeps this file plain C++ (no
 // Objective-C runtime needed just to find our own path), same rationale
 // as Windows' GetModuleFileNameW call in ShellLinkAutoLaunch.
-std::string ExecutablePath() {
+std::string SelfExecutablePath() {
     uint32_t size = 0;
     _NSGetExecutablePath(nullptr, &size); // first call only reports the required size
     std::vector<char> buffer(size);
@@ -37,13 +37,16 @@ std::string ExecutablePath() {
 
 } // namespace
 
+LaunchAgentAutoLaunch::LaunchAgentAutoLaunch(std::string targetExePath, std::string label)
+    : _targetExePath(std::move(targetExePath)), _label(std::move(label)) {}
+
 bool LaunchAgentAutoLaunch::IsEnabled() const {
-    auto path = PlistPath();
+    auto path = PlistPath(_label);
     return !path.empty() && std::filesystem::exists(path);
 }
 
 void LaunchAgentAutoLaunch::SetEnabled(bool enabled) {
-    auto path = PlistPath();
+    auto path = PlistPath(_label);
     if (path.empty()) {
         return;
     }
@@ -54,10 +57,16 @@ void LaunchAgentAutoLaunch::SetEnabled(bool enabled) {
         return;
     }
 
-    std::string exe = ExecutablePath();
+    std::string exe = _targetExePath.empty() ? SelfExecutablePath() : _targetExePath;
     if (exe.empty()) {
         return;
     }
+
+    // Reflects the current tray preference in ProgramArguments rather
+    // than needing a separate plist per mode - `itunesrpc tray on/off`
+    // re-runs SetEnabled(true) to keep this in sync whenever autostart is
+    // already registered.
+    core::AppConfig config = core::LoadConfig(core::GetConfigFilePath());
 
     std::filesystem::create_directories(path.parent_path());
 
@@ -67,11 +76,14 @@ void LaunchAgentAutoLaunch::SetEnabled(bool enabled) {
         << "<plist version=\"1.0\">\n"
         << "<dict>\n"
         << "  <key>Label</key>\n"
-        << "  <string>" << kLabel << "</string>\n"
+        << "  <string>" << _label << "</string>\n"
         << "  <key>ProgramArguments</key>\n"
         << "  <array>\n"
-        << "    <string>" << exe << "</string>\n"
-        << "  </array>\n"
+        << "    <string>" << exe << "</string>\n";
+    if (!config.trayEnabled) {
+        out << "    <string>--no-tray</string>\n";
+    }
+    out << "  </array>\n"
         << "  <key>RunAtLoad</key>\n"
         << "  <true/>\n"
         << "</dict>\n"

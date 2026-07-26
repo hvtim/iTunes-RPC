@@ -1,12 +1,13 @@
 param(
     [switch]$NoAutoStart,
-    [switch]$Desktop
+    [switch]$Desktop,
+    [switch]$NoTray
 )
 
 $ErrorActionPreference = "Stop"
 
 # Bump this alongside each release tag - shown in Windows' "Installed apps" list.
-$appVersion = "3.0.0"
+$appVersion = "3.0.0-alpha.1"
 $exeName = "iTunesRPC.exe"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -65,6 +66,12 @@ $shell = New-Object -ComObject WScript.Shell
 function New-AppShortcut($path) {
     $shortcut = $shell.CreateShortcut($path)
     $shortcut.TargetPath = $exePath
+    # All shortcuts (not just Startup) launch headless when -NoTray was
+    # requested - otherwise double-clicking the Start Menu entry would
+    # unexpectedly pop a tray icon the user explicitly opted out of.
+    if ($NoTray) {
+        $shortcut.Arguments = "--no-tray"
+    }
     $shortcut.WorkingDirectory = $installDir
     $shortcut.Description = "iTunes now-playing sync for Discord Rich Presence"
     $shortcut.Save()
@@ -112,6 +119,12 @@ Write-Host ""
 
 Get-Process ([System.IO.Path]::GetFileNameWithoutExtension($exeName)) -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Milliseconds 300
-Start-Process -FilePath $exePath -WorkingDirectory $installDir
 
-Write-Host "Started iTunes-RPC. A tray icon should now appear - right-click it to enter your Discord Application ID." -ForegroundColor Green
+if ($NoTray) {
+    Start-Process -FilePath $exePath -ArgumentList "--no-tray" -WorkingDirectory $installDir
+    Write-Host "Started iTunes-RPC headless (no tray icon)." -ForegroundColor Green
+    Write-Host "Configure it with itunesrpc-cli.exe, e.g.: itunesrpc-cli appid set <your-discord-app-id>"
+} else {
+    Start-Process -FilePath $exePath -WorkingDirectory $installDir
+    Write-Host "Started iTunes-RPC. A tray icon should now appear - right-click it to enter your Discord Application ID." -ForegroundColor Green
+}

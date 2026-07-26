@@ -17,6 +17,7 @@ constexpr UINT CMD_TOGGLE_BROADCAST = 3;
 constexpr UINT CMD_TOGGLE_TRACK_NUMBER = 4;
 constexpr UINT CMD_TOGGLE_START_AT_LOGIN = 5;
 constexpr UINT CMD_EXIT = 6;
+constexpr UINT CMD_TOGGLE_TRAY_ENABLED = 7;
 
 constexpr UINT CMD_ART_MODE_AUTO = 200;
 constexpr UINT CMD_ART_MODE_CUSTOM = 201;
@@ -216,6 +217,8 @@ HMENU TrayIcon::BuildMenu() {
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(menu, MF_STRING | (startAtLogin_ ? MF_CHECKED : MF_UNCHECKED),
         CMD_TOGGLE_START_AT_LOGIN, L"Start automatically when you log in");
+    AppendMenuW(menu, MF_STRING | (config_.trayEnabled ? MF_CHECKED : MF_UNCHECKED),
+        CMD_TOGGLE_TRAY_ENABLED, L"Show tray icon (applies next launch)");
 
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(menu, MF_STRING, CMD_EXIT, L"Exit");
@@ -302,6 +305,15 @@ void TrayIcon::HandleCommand(UINT id) {
         if (OnStartAtLoginChanged) {
             OnStartAtLoginChanged(startAtLogin_);
         }
+        return;
+    }
+
+    if (id == CMD_TOGGLE_TRAY_ENABLED) {
+        // Cannot apply live - this process can't remove its own tray
+        // icon mid-session - main.cpp's OnConfigChanged logs the deferred
+        // effect, this class just flips the flag like any other toggle.
+        config_.trayEnabled = !config_.trayEnabled;
+        NotifyConfigChanged();
         return;
     }
 

@@ -1,6 +1,9 @@
 #include "ShellLinkAutoLaunch.h"
 #include "ComInit.h"
 
+#include "core/AppConfig.h"
+#include "core/ConfigPaths.h"
+
 #include <windows.h>
 #include <shlobj.h>
 #include <shobjidl.h>
@@ -11,11 +14,11 @@ namespace platform_windows {
 
 namespace {
 
-std::filesystem::path ShortcutPath() {
+std::filesystem::path ShortcutPath(const std::wstring& name) {
     PWSTR path = nullptr;
     std::filesystem::path result;
     if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Startup, 0, nullptr, &path))) {
-        result = std::filesystem::path(path) / L"iTunes-RPC.lnk";
+        result = std::filesystem::path(path) / name;
     }
     if (path) {
         CoTaskMemFree(path);
@@ -23,15 +26,24 @@ std::filesystem::path ShortcutPath() {
     return result;
 }
 
+std::filesystem::path SelfExePath() {
+    wchar_t exePath[MAX_PATH];
+    GetModuleFileNameW(nullptr, exePath, MAX_PATH);
+    return exePath;
+}
+
 } // namespace
 
+ShellLinkAutoLaunch::ShellLinkAutoLaunch(std::filesystem::path targetExePath, std::wstring shortcutName)
+    : _targetExePath(std::move(targetExePath)), _shortcutName(std::move(shortcutName)) {}
+
 bool ShellLinkAutoLaunch::IsEnabled() const {
-    auto path = ShortcutPath();
+    auto path = ShortcutPath(_shortcutName);
     return !path.empty() && std::filesystem::exists(path);
 }
 
 void ShellLinkAutoLaunch::SetEnabled(bool enabled) {
-    auto path = ShortcutPath();
+    auto path = ShortcutPath(_shortcutName);
     if (path.empty()) {
         return;
     }
@@ -44,9 +56,15 @@ void ShellLinkAutoLaunch::SetEnabled(bool enabled) {
 
     EnsureComInitialized();
 
-    wchar_t exePath[MAX_PATH];
-    GetModuleFileNameW(nullptr, exePath, MAX_PATH);
-    std::filesystem::path installDir = std::filesystem::path(exePath).parent_path();
+    std::filesystem::path exePath = _targetExePath.empty() ? SelfExePath() : _targetExePath;
+    std::filesystem::path installDir = exePath.parent_path();
+
+    // Reflects the current tray preference in the shortcut's own
+    // arguments rather than needing a separate shortcut per mode -
+    // `itunesrpc tray on/off` re-runs SetEnabled(true) to keep this in
+    // sync whenever autostart is already registered.
+    core::AppConfig config = core::LoadConfig(core::GetConfigFilePath());
+    std::wstring arguments = config.trayEnabled ? L"" : L"--no-tray";
 
     IShellLinkW* shellLink = nullptr;
     if (FAILED(CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_IShellLinkW,
@@ -54,7 +72,8 @@ void ShellLinkAutoLaunch::SetEnabled(bool enabled) {
         return;
     }
 
-    shellLink->SetPath(exePath);
+    shellLink->SetPath(exePath.c_str());
+    shellLink->SetArguments(arguments.c_str());
     shellLink->SetWorkingDirectory(installDir.c_str());
     shellLink->SetDescription(L"iTunes now-playing sync for Discord Rich Presence");
 

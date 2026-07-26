@@ -3,6 +3,9 @@
 #include "core/Log.h"
 #include "core/PresenceEngine.h"
 
+#include "cli/StatusFile.h"
+
+#include "platform/windows/DaemonSignal.h"
 #include "platform/windows/ITunesMediaSource.h"
 #include "platform/windows/PipeIpcTransport.h"
 #include "platform/windows/ShellLinkAutoLaunch.h"
@@ -13,6 +16,7 @@
 #include "platform/windows/WinHttpAlbumArtLookup.h"
 
 #include <windows.h>
+#include <shellapi.h>
 
 #include <cstdio>
 #include <memory>
@@ -38,10 +42,32 @@ void AttachDebugConsole() {
     SetConsoleTitleW(L"iTunes-RPC - debug console");
 }
 
+// wWinMain doesn't get argc/argv directly - CommandLineToArgvW is the
+// standard way to recover them from GetCommandLineW().
+bool HasNoTrayFlag() {
+    int argc = 0;
+    LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+    if (!argv) {
+        return false;
+    }
+    bool found = false;
+    for (int i = 1; i < argc; ++i) {
+        if (wcscmp(argv[i], L"--no-tray") == 0) {
+            found = true;
+            break;
+        }
+    }
+    LocalFree(argv);
+    return found;
+}
+
 } // namespace
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int) {
-    AttachDebugConsole();
+    bool noTray = HasNoTrayFlag();
+    if (!noTray) {
+        AttachDebugConsole();
+    }
 
     core::Log::Init(core::GetLogFilePath());
     core::Log::Write("iTunes-RPC starting...");
@@ -57,14 +83,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int) {
         std::make_unique<platform_windows::WinHttpAlbumArtLookup>(),
         [] { return std::make_unique<platform_windows::PipeIpcTransport>(); });
 
-    nativeui::TrayIcon tray;
-    if (!tray.Create(hInstance, L"iTunes-RPC")) {
-        MessageBoxW(nullptr, L"Failed to create the tray icon.", L"iTunes-RPC", MB_ICONERROR);
-        return 1;
-    }
-    tray.SetInitialState(config, autoLaunch.IsEnabled());
-
-    tray.OnConfigChanged = [&](const core::AppConfig& newConfig) {
+    // Shared by both the tray's OnConfigChanged and the headless reload
+    // loop below - the "save + re-resolve media source if it changed +
+    // hand off to the engine" sequence is identical either way.
+    auto applyConfig = [&](const core::AppConfig& newConfig) {
         core::SaveConfig(newConfig, core::GetConfigFilePath());
 
         std::unique_ptr<core::MediaSource> newMediaSource;
@@ -74,6 +96,42 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int) {
         }
 
         engine.UpdateConfig(newConfig, std::move(newMediaSource));
+    };
+
+    if (noTray) {
+        // No tray/message-loop thread exists in this mode, so `itunesrpc`
+        // reaches this process via the named Events in DaemonSignal.h
+        // instead of PostMessage.
+        platform_windows::DaemonWaiter waiter;
+        engine.OnStatusChanged = [&] { cli::WriteStatusFile(engine.Status()); };
+        engine.Start();
+
+        for (;;) {
+            if (waiter.Wait() == platform_windows::DaemonSignalKind::Quit) {
+                break;
+            }
+            applyConfig(core::LoadConfig(core::GetConfigFilePath()));
+            core::Log::Write("Reloaded config.");
+        }
+
+        engine.Stop();
+        core::Log::Write("Exiting.");
+        return 0;
+    }
+
+    nativeui::TrayIcon tray;
+    if (!tray.Create(hInstance, L"iTunes-RPC")) {
+        MessageBoxW(nullptr, L"Failed to create the tray icon.", L"iTunes-RPC", MB_ICONERROR);
+        return 1;
+    }
+    tray.SetInitialState(config, autoLaunch.IsEnabled());
+
+    tray.OnConfigChanged = [&](const core::AppConfig& newConfig) {
+        if (newConfig.trayEnabled != config.trayEnabled) {
+            core::Log::Write("Tray icon preference changed - takes effect next launch.");
+        }
+        config = newConfig;
+        applyConfig(newConfig);
     };
 
     tray.OnStartAtLoginChanged = [&](bool enabled) {

@@ -18,6 +18,7 @@ void to_json(nlohmann::json& j, const AppConfig& c) {
         {"ArtMode", c.artMode},
         {"CustomArtUrl", c.customArtUrl},
         {"MediaSource", c.mediaSource},
+        {"TrayEnabled", c.trayEnabled},
     };
 }
 
@@ -31,6 +32,7 @@ void from_json(const nlohmann::json& j, AppConfig& c) {
     c.artMode = j.value("ArtMode", defaults.artMode);
     c.customArtUrl = j.value("CustomArtUrl", defaults.customArtUrl);
     c.mediaSource = j.value("MediaSource", defaults.mediaSource);
+    c.trayEnabled = j.value("TrayEnabled", defaults.trayEnabled);
 }
 
 AppConfig LoadConfig(const std::filesystem::path& path) {

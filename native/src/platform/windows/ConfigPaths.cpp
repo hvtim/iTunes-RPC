@@ -25,4 +25,12 @@ std::filesystem::path GetLogFilePath() {
     return GetConfigDirectory() / L"itunes-rpc.log";
 }
 
+std::filesystem::path GetPidFilePath() {
+    return GetConfigDirectory() / L"itunesrpcd.pid";
+}
+
+std::filesystem::path GetStatusFilePath() {
+    return GetConfigDirectory() / L"itunesrpcd.status.json";
+}
+
 } // namespace core

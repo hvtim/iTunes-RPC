@@ -16,8 +16,12 @@ if(WIN32)
         src/core/DiscordIpcClient.cpp
         src/core/PresenceEngine.cpp
 
+        # cli/ - portable status-file writer (also used headless, see --no-tray)
+        src/cli/StatusFile.cpp
+
         # platform/windows/ - COM iTunes monitor, C++/WinRT SMTC monitor,
-        # named-pipe transport, shortcut-based autorun, tray + menu + prompt UI
+        # named-pipe transport, shortcut-based autorun, tray + menu + prompt UI,
+        # named-Event based signaling for the separate itunesrpc CLI tool
         src/platform/windows/ConfigPaths.cpp
         src/platform/windows/StringConvert.cpp
         src/platform/windows/PipeIpcTransport.cpp
@@ -30,6 +34,7 @@ if(WIN32)
         src/platform/windows/TrayIcon.cpp
         src/platform/windows/TextPrompt.cpp
         src/platform/windows/DarkMode.cpp
+        src/platform/windows/DaemonSignal.cpp
         src/platform/windows/resources.rc
     )
 
@@ -62,6 +67,49 @@ if(WIN32)
     # installs/shortcuts keep working with zero user action - see install.ps1's
     # install-info.json handling for what happens if this is ever renamed.
     set_target_properties(itunes-rpc-native PROPERTIES OUTPUT_NAME "iTunesRPC")
+
+    # itunesrpc - the thin CLI control tool (edits config.json, signals the
+    # running app via named Events). Plain console subsystem (no WIN32 flag,
+    # unlike the target above) and no PresenceEngine/DiscordIpcClient - it
+    # never runs the engine itself, just talks to whatever's already running.
+    add_executable(itunesrpc-cli
+        src/platform/windows/main_windows_cli.cpp
+
+        src/core/AppConfig.cpp
+
+        src/cli/CliDispatch.cpp
+        src/cli/StatusFile.cpp
+
+        src/platform/windows/ConfigPaths.cpp
+        src/platform/windows/StringConvert.cpp
+        src/platform/windows/ComHelpers.cpp
+        src/platform/windows/ComInit.cpp
+        src/platform/windows/ShellLinkAutoLaunch.cpp
+        src/platform/windows/SmtcMediaSource.cpp
+        src/platform/windows/DaemonSignal.cpp
+    )
+
+    target_include_directories(itunesrpc-cli PRIVATE
+        src
+        ${CMAKE_SOURCE_DIR}/third_party
+    )
+
+    target_compile_definitions(itunesrpc-cli PRIVATE
+        UNICODE
+        _UNICODE
+        WIN32_LEAN_AND_MEAN
+        NOMINMAX
+    )
+
+    target_link_libraries(itunesrpc-cli PRIVATE
+        Shell32 Ole32 Uuid WindowsApp
+    )
+
+    # NOT "itunesrpc" - Windows filesystems are case-insensitive, so that
+    # would collide with iTunesRPC.exe above and one would silently
+    # clobber the other on build (this actually happened once - the CLI
+    # build overwrote the main app binary with itself).
+    set_target_properties(itunesrpc-cli PROPERTIES OUTPUT_NAME "itunesrpc-cli")
 
 elseif(APPLE)
     # Universal binary (Apple Silicon + Intel) by default - CMAKE_OSX_ARCHITECTURES
@@ -120,7 +168,7 @@ elseif(APPLE)
         OUTPUT_NAME "iTunesRPC"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/src/platform/macos/Info.plist.in"
         MACOSX_BUNDLE_BUNDLE_VERSION "3.0.0"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "3.0.0"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "3.0.0-alpha.1"
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.hvtim.itunes-rpc"
     )
 

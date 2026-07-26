@@ -20,6 +20,12 @@ struct AppConfig {
     // "iTunes" (COM automation), or an SMTC app user model id (e.g.
     // "vlc.exe") for any other app reporting now-playing info to Windows.
     std::string mediaSource = "iTunes";
+
+    // Whether this app instance should create a tray icon. Cannot be
+    // applied live to a running process (a running instance can't cleanly
+    // make its own tray icon disappear mid-session) - takes effect next
+    // launch, unlike every other field here.
+    bool trayEnabled = true;
 };
 
 // Missing/unreadable/corrupt file returns default-constructed AppConfig
